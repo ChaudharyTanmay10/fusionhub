@@ -158,7 +158,7 @@
       <p id="profile-bio">A short bio goes here.</p>
     </div>
     <div class="action-buttons" id="action-buttons">
-      <!-- This area will show the "Edit Profile" button if the logged-in user is an admin or is viewing their own profile -->
+      <!-- Edit Profile button will appear if logged-in user is viewing their own profile -->
     </div>
     <div class="stats-row">
       <div class="stat-box">
@@ -188,26 +188,20 @@
   </div>
   
   <script>
-    /***********************************************************
-     * In this demo:
-     * - "myUser" represents the logged-in user stored in localStorage.
-     * - "selectedProfile" is the profile being viewed. For admin editing,
-     *   if myUser.admin is true, the edit option is available for any profile.
-     * 
-     * In production, your backend would manage permissions.
-     ***********************************************************/
-    
-    // Retrieve logged-in user data (myUser)
+    // Retrieve the logged-in user's data ("myUser") from localStorage.
     let myUser = JSON.parse(localStorage.getItem('myUser'));
-    if (!myUser) { window.location.href = "index.html"; }
+    if (!myUser) { 
+      window.location.href = "index.html"; 
+    }
     
-    // Retrieve the profile being viewed; if not set, use myUser.
+    // Retrieve the profile being viewed ("selectedProfile").
+    // For a user editing their own profile, selectedProfile should match myUser.
     let selectedProfile = JSON.parse(localStorage.getItem('selectedProfile'));
     if (!selectedProfile) {
       selectedProfile = myUser;
     }
     
-    // Populate profile UI.
+    // Populate profile page with the selected profile data.
     function populateProfile() {
       document.getElementById('profile-name').textContent = selectedProfile.name;
       document.getElementById('profile-bio').textContent = selectedProfile.bio;
@@ -218,22 +212,16 @@
     }
     populateProfile();
     
-    // Determine if edit is allowed:
-    // Allow edit if:
-    //   - The logged-in user is viewing their own profile (selectedProfile.username === myUser.username), OR
-    //   - The logged-in user is an admin (myUser.admin === true).
-    const canEdit = (selectedProfile.username === myUser.username) || (myUser.admin === true);
-    
-    // Setup action buttons.
+    // Show "Edit Profile" button if the logged-in user is viewing their own profile.
     const actionButtons = document.getElementById('action-buttons');
-    if (canEdit) {
+    if (selectedProfile.username === myUser.username) {
       actionButtons.innerHTML = `
         <button class="btn edit-btn" id="edit-btn">Edit Profile</button>
         <button class="btn logout-btn" id="logout-btn">Logout</button>
       `;
     }
     
-    // Toggle Edit Profile Form.
+    // Toggle the edit profile form.
     const editBtn = document.getElementById('edit-btn');
     const editForm = document.getElementById('edit-form');
     if (editBtn) {
@@ -245,7 +233,7 @@
       });
     }
     
-    // File input for profile picture.
+    // Handle file selection for profile picture update.
     document.getElementById('profile-pic-file').addEventListener('change', function(event) {
       const file = event.target.files[0];
       if (file) {
@@ -263,18 +251,14 @@
       selectedProfile.name = document.getElementById('edit-name').value;
       selectedProfile.bio = document.getElementById('edit-bio').value;
       selectedProfile.profilePic = document.getElementById('edit-profile-pic').value;
-      // Save changes: if editing own profile, update both myUser and selectedProfile.
-      if (selectedProfile.username === myUser.username) {
-        myUser = selectedProfile;
-        localStorage.setItem('myUser', JSON.stringify(myUser));
-      }
+      localStorage.setItem('myUser', JSON.stringify(selectedProfile));
       localStorage.setItem('selectedProfile', JSON.stringify(selectedProfile));
       populateProfile();
       editForm.style.display = "none";
       alert("Profile updated successfully!");
     });
     
-    // Logout functionality: attached to both navbar and in-page logout button.
+    // Logout functionality for both navbar and in-page logout buttons.
     function performLogout() {
       document.cookie = "fusionHubUser=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; Secure; SameSite=Lax";
       localStorage.removeItem("myUser");
@@ -285,10 +269,12 @@
       e.preventDefault();
       performLogout();
     });
-    document.getElementById('logout-btn') && document.getElementById('logout-btn').addEventListener('click', function(e) {
-      e.preventDefault();
-      performLogout();
-    });
+    if (document.getElementById('logout-btn')) {
+      document.getElementById('logout-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        performLogout();
+      });
+    }
   </script>
 </body>
 </html>
