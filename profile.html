@@ -147,7 +147,7 @@
   <div class="navbar">
     <a href="home.html" class="nav-item">Home</a>
     <a href="profile.html" class="nav-item">Profile</a>
-    <a href="#" class="nav-item" id="logout">Logout</a>
+    <a href="index.html" class="nav-item" id="logout">Logout</a>
   </div>
   <div class="profile-container">
     <div class="profile-header">
@@ -158,7 +158,7 @@
       <p id="profile-bio">A short bio goes here.</p>
     </div>
     <div class="action-buttons" id="action-buttons">
-      <!-- For own profile: Edit Profile & Logout buttons -->
+      <!-- This area will show the "Edit Profile" button if the logged-in user is an admin or is viewing their own profile -->
     </div>
     <div class="stats-row">
       <div class="stat-box">
@@ -186,27 +186,47 @@
     </div>
     <div class="footer-space"></div>
   </div>
+  
   <script>
-    // Retrieve the selected profile from localStorage; if not set, default to myUser.
+    /***********************************************************
+     * In this demo:
+     * - "myUser" represents the logged-in user stored in localStorage.
+     * - "selectedProfile" is the profile being viewed. For admin editing,
+     *   if myUser.admin is true, the edit option is available for any profile.
+     * 
+     * In production, your backend would manage permissions.
+     ***********************************************************/
+    
+    // Retrieve logged-in user data (myUser)
+    let myUser = JSON.parse(localStorage.getItem('myUser'));
+    if (!myUser) { window.location.href = "index.html"; }
+    
+    // Retrieve the profile being viewed; if not set, use myUser.
     let selectedProfile = JSON.parse(localStorage.getItem('selectedProfile'));
     if (!selectedProfile) {
-      selectedProfile = JSON.parse(localStorage.getItem('myUser'));
-      if (!selectedProfile) { window.location.href = "index.html"; }
+      selectedProfile = myUser;
     }
-    // Populate profile page.
-    document.getElementById('profile-name').textContent = selectedProfile.name;
-    document.getElementById('profile-bio').textContent = selectedProfile.bio;
-    document.getElementById('profile-pic').src = selectedProfile.profilePic;
-    document.getElementById('posts-count').textContent = selectedProfile.posts || 0;
-    document.getElementById('followers-count').textContent = selectedProfile.followers || 0;
-    document.getElementById('following-count').textContent = selectedProfile.following || 0;
     
-    // Retrieve logged-in user (myUser).
-    const myUser = JSON.parse(localStorage.getItem('myUser')) || { username: "" };
+    // Populate profile UI.
+    function populateProfile() {
+      document.getElementById('profile-name').textContent = selectedProfile.name;
+      document.getElementById('profile-bio').textContent = selectedProfile.bio;
+      document.getElementById('profile-pic').src = selectedProfile.profilePic;
+      document.getElementById('posts-count').textContent = selectedProfile.posts || 0;
+      document.getElementById('followers-count').textContent = selectedProfile.followers || 0;
+      document.getElementById('following-count').textContent = selectedProfile.following || 0;
+    }
+    populateProfile();
     
-    // For own profile, show Edit Profile and Logout buttons.
+    // Determine if edit is allowed:
+    // Allow edit if:
+    //   - The logged-in user is viewing their own profile (selectedProfile.username === myUser.username), OR
+    //   - The logged-in user is an admin (myUser.admin === true).
+    const canEdit = (selectedProfile.username === myUser.username) || (myUser.admin === true);
+    
+    // Setup action buttons.
     const actionButtons = document.getElementById('action-buttons');
-    if (selectedProfile.username === myUser.username) {
+    if (canEdit) {
       actionButtons.innerHTML = `
         <button class="btn edit-btn" id="edit-btn">Edit Profile</button>
         <button class="btn logout-btn" id="logout-btn">Logout</button>
@@ -225,7 +245,7 @@
       });
     }
     
-    // Handle file selection to update profile picture.
+    // File input for profile picture.
     document.getElementById('profile-pic-file').addEventListener('change', function(event) {
       const file = event.target.files[0];
       if (file) {
@@ -238,21 +258,29 @@
       }
     });
     
-    // Save changes.
+    // Save changes from the edit form.
     document.getElementById('save-btn').addEventListener('click', function() {
       selectedProfile.name = document.getElementById('edit-name').value;
       selectedProfile.bio = document.getElementById('edit-bio').value;
       selectedProfile.profilePic = document.getElementById('edit-profile-pic').value;
-      localStorage.setItem('myUser', JSON.stringify(selectedProfile));
+      // Save changes: if editing own profile, update both myUser and selectedProfile.
+      if (selectedProfile.username === myUser.username) {
+        myUser = selectedProfile;
+        localStorage.setItem('myUser', JSON.stringify(myUser));
+      }
       localStorage.setItem('selectedProfile', JSON.stringify(selectedProfile));
-      document.getElementById('profile-name').textContent = selectedProfile.name;
-      document.getElementById('profile-bio').textContent = selectedProfile.bio;
-      document.getElementById('profile-pic').src = selectedProfile.profilePic;
+      populateProfile();
       editForm.style.display = "none";
       alert("Profile updated successfully!");
     });
     
-    // Logout functionality (also attached to navbar logout link).
+    // Logout functionality: attached to both navbar and in-page logout button.
+    function performLogout() {
+      document.cookie = "fusionHubUser=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; Secure; SameSite=Lax";
+      localStorage.removeItem("myUser");
+      localStorage.removeItem("fusionHubToken");
+      window.location.href = "index.html";
+    }
     document.getElementById('logout').addEventListener('click', function(e) {
       e.preventDefault();
       performLogout();
@@ -261,12 +289,6 @@
       e.preventDefault();
       performLogout();
     });
-    function performLogout() {
-      document.cookie = "fusionHubUser=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; Secure; SameSite=Lax";
-      localStorage.removeItem("myUser");
-      localStorage.removeItem("fusionHubToken");
-      window.location.href = "index.html";
-    }
   </script>
 </body>
 </html>
